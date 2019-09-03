@@ -1,0 +1,229 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.build.gradle.api;
+
+import com.android.annotations.NonNull;
+import com.android.annotations.Nullable;
+import com.android.build.gradle.tasks.AidlCompile;
+import com.android.build.gradle.tasks.ExternalNativeBuildTask;
+import com.android.build.gradle.tasks.GenerateBuildConfig;
+import com.android.build.gradle.tasks.MergeResources;
+import com.android.build.gradle.tasks.MergeSourceSetFolders;
+import com.android.build.gradle.tasks.RenderscriptCompile;
+import com.android.builder.model.BuildType;
+import com.android.builder.model.ProductFlavor;
+import com.android.builder.model.SourceProvider;
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import org.gradle.api.DomainObjectCollection;
+import org.gradle.api.Incubating;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.ArtifactCollection;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileTree;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.resources.TextResource;
+import org.gradle.api.tasks.AbstractCopyTask;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.compile.JavaCompile;
+
+/**
+ * A Build variant and all its public data. This is the base class for items common to apps,
+ * test apps, and libraries
+ */
+public interface BaseVariant {
+
+    /**
+     * Returns the name of the variant. Guaranteed to be unique.
+     */
+    @NonNull
+    String getName();
+
+    /**
+     * Returns a description for the build variant.
+     */
+    @NonNull
+    String getDescription();
+
+    /**
+     * Returns a subfolder name for the variant. Guaranteed to be unique.
+     *
+     * This is usually a mix of build type and flavor(s) (if applicable).
+     * For instance this could be:
+     * "debug"
+     * "debug/myflavor"
+     * "release/Flavor1Flavor2"
+     */
+    @NonNull
+    String getDirName();
+
+    /**
+     * Returns the base name for the output of the variant. Guaranteed to be unique.
+     */
+    @NonNull
+    String getBaseName();
+
+    /**
+     * Returns the flavor name of the variant. This is a concatenation of all the
+     * applied flavors
+     * @return the name of the flavors, or an empty string if there is not flavors.
+     */
+    @NonNull
+    String getFlavorName();
+
+    /**
+     * Returns the variant outputs. There should always be at least one output.
+     *
+     * @return a non-null list of variants.
+     */
+    @NonNull
+    DomainObjectCollection<BaseVariantOutput> getOutputs();
+
+    /**
+     * Returns the {@link com.android.builder.core.DefaultBuildType} for this build variant.
+     */
+    @NonNull
+    BuildType getBuildType();
+
+    /**
+     * Returns a {@link com.android.builder.core.DefaultProductFlavor} that represents the merging
+     * of the default config and the flavors of this build variant.
+     */
+    @NonNull
+    ProductFlavor getMergedFlavor();
+
+    /**
+     * Returns a {@link JavaCompileOptions} that represents the java compile settings for this build
+     * variant.
+     */
+    @NonNull
+    JavaCompileOptions getJavaCompileOptions();
+
+    /**
+     * Returns the list of {@link com.android.builder.core.DefaultProductFlavor} for this build
+     * variant.
+     *
+     * <p>This is always non-null but could be empty.
+     */
+    @NonNull
+    List<ProductFlavor> getProductFlavors();
+
+    /**
+     * Returns a list of sorted SourceProvider in order of ascending order, meaning, the earlier
+     * items are meant to be overridden by later items.
+     *
+     * @return a list of source provider
+     */
+    @NonNull
+    List<SourceProvider> getSourceSets();
+
+    /**
+     * Returns a list of FileCollection representing the source folders.
+     *
+     * @param folderType the type of folder to return.
+     * @return a list of folder + dependency as file collections.
+     */
+    @NonNull
+    List<ConfigurableFileTree> getSourceFolders(@NonNull SourceKind folderType);
+
+    /** Returns the configuration object for the compilation */
+    @NonNull
+    Configuration getCompileConfiguration();
+
+    /** Returns the configuration object for the annotation processor. */
+    @NonNull
+    Configuration getAnnotationProcessorConfiguration();
+
+    /** Returns the configuration object for the runtime */
+    @NonNull
+    Configuration getRuntimeConfiguration();
+
+    /** Returns the applicationId of the variant. */
+    @NonNull
+    String getApplicationId();
+
+    /**
+     * Returns the true application Id of the variant. For feature variants, this returns the
+     * resolved application id from the application. For application variants, this is the same as
+     * getApplicationId.
+     */
+    @NonNull
+    TextResource getApplicationIdTextResource();
+
+    /**
+     * Returns the pre-build anchor task
+     *
+     * @deprecated Use {@link #getPreBuildProvider()}
+     */
+    @NonNull
+    @Deprecated
+    Task getPreBuild();
+
+    /**
+     * Returns the {@link TaskProvider} for the pre-build anchor task.
+     *
+     * <p>Prefer this to {@link #getPreBuild()} as it triggers eager configuration of the task.
+     */
+    @NonNull
+    TaskProvider<Task> getPreBuildProvider();
+
+    /**
+     * Returns the check manifest task.
+     *
+     * @deprecated Use {@link #getCheckManifestProvider()}
+     */
+    @NonNull
+    @Deprecated
+    Task getCheckManifest();
+
+    /**
+     * Returns the {@link TaskProvider} for the check manifest task.
+     *
+     * <p>Prefer this to {@link #getCheckManifest()} as it triggers eager configuration of the task.
+     */
+    @NonNull
+    TaskProvider<Task> getCheckManifestProvider();
+
+    /**
+     * Returns the AIDL compilation task.
+     *
+     * @deprecated Use {@link #getAidlCompileProvider()}
+     */
+    @NonNull
+    @Deprecated
+    AidlCompile getAidlCompile();
+
+    /**
+     * Returns the {@link TaskProvider} for the AIDL compilation task.
+     *
+     * <p>Prefer this to {@link #getAidlCompile()} as it triggers eager configuration of the task.
+     */
+    @NonNull
+    TaskProvider<AidlCompile> getAidlCompileProvider();
+
+    /**
+     * Returns the Renderscript compilation task.
+     *
+     * @deprecated Use {@link #getRenderscriptCompileProvider()}
+     */
+    @NonNull
+    @Deprecated
+    RenderscriptCompile getRenderscriptCompile();
+
+    /**
+     * Returns the {@link TaskProvider} for the Renderscript co
