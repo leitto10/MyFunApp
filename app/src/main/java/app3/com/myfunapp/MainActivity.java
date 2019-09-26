@@ -9,6 +9,8 @@ import android.util.Log;
 import android.widget.Toast;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -21,6 +23,7 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private CurrentWeather currentWeather;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,19 +52,45 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                     try {
-                        Log.e(TAG, response.body().string());
+                        String jsonData = response.body().string();
+                        Log.e(TAG, jsonData);
                         if (response.isSuccessful()) {
-
+                            currentWeather = getCurrentDetails(jsonData);
                         } else {
                             alertUserAboutErroe();
                         }
                     } catch (IOException e) {
                         Log.e(TAG, "ID exception caught: ", e);
+                    } catch (JSONException e){
+                        Log.e(TAG, "JSON Exception caught", e);
                     }
                 }
             });
         }
         Log.d(TAG, "Main UI is running....");
+    }
+
+    private CurrentWeather getCurrentDetails(String jsonData) throws JSONException {
+        JSONObject forecast = new JSONObject(jsonData);
+
+        String timezone = forecast.getString("timezone");
+        Log.i(TAG, "FROM JSON: " + timezone);
+
+        JSONObject currently = forecast.getJSONObject("currently");
+        CurrentWeather currentWeather = new CurrentWeather();
+
+        currentWeather.setHumidity(currently.getDouble("humidity"));
+        currentWeather.setTime(currently.getLong("time"));
+        currentWeather.setIcon(currently.getString("icon"));
+        currentWeather.setLocationLabel("Alcatraz Island, CA");
+        currentWeather.setPrecipChange(currently.getDouble("precipProbability"));
+        currentWeather.setSummary(currently.getString("summary"));
+        currentWeather.setTemperature(currently.getDouble("temperature"));
+        currentWeather.setTimeZone(timezone);
+
+        Log.d(TAG, currentWeather.getFormattedTime());
+
+        return currentWeather;
     }
 
     private boolean isNetworkAvailable() {
