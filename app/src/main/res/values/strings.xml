@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MyFunApp</string>
+    <string name="dark_sky_message"><a href="https://darksky.net/poweredby">Powered by Dark Sky</a></string>
 </resources>
